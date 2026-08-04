@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Screen Tracker - Background Mode</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ----- CSS (style.css) ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #0b0e14;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        .tracker-card {
+            max-width: 1300px;
+            width: 100%;
+            background: #131a22;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px #2a3440;
+            padding: 2rem 2rem 2.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .tracker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tracker-header h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #b0d0ff, #7aa9ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .tracker-header h1 i {
+            -webkit-text-fill-color: #7aa9ff;
+            font-size: 2rem;
+        }
+
+        .status-badge {
+            background: #1f2a36;
+            padding: 0.6rem 1.4rem;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #b8d0f0;
+            border: 1px solid #31465a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: inset 0 1px 2px #2a3a4a;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #29d67a;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #29d67a88;
+            animation: pulse-dot 1.8s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% {
+                opacity: 0.5;
+                transform: scale(0.95);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0.5;
+                transform: scale(0.95);
+            }
+        }
+
+        /* stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-item {
+            background: #1c2733;
+            padding: 1.2rem 1rem;
+            border-radius: 1.8rem;
+            border: 1px solid #2e3d4e;
+            box-shadow: inset 0 2px 4px #0f161e;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .stat-item i {
+            font-size: 2rem;
+            color: #7aa9ff;
+            width: 2.8rem;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #9eb3d0;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #edf4ff;
+            line-height: 1.2;
+            letter-spacing: 0.5px;
+        }
+
+        /* live feed + canvas */
+        .live-section {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            margin-top: 0.8rem;
+        }
+
+        .canvas-wrapper {
+            flex: 2;
+            min-width: 400px;
+            background: #0e161f;
+            border-radius: 2rem;
+            padding: 0.8rem;
+            border: 1px solid #2d3e52;
+            box-shadow: 0 10px 18px #070b0f;
+        }
+
+        #trackCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 10;
+            background: #101b26;
+            border-radius: 1.4rem;
+            cursor: crosshair;
+            box-shadow: inset 0 0 0 1px #293b4b;
+            transition: all 0.1s;
+        }
+
+        .event-feed {
+            flex: 1.2;
+            min-width: 240px;
+            background: #111d29;
+            border-radius: 2rem;
+            padding: 1.2rem 1rem;
+            border: 1px solid #2c4054;
+            display: flex;
+            flex-direction: column;
+            max-height: 370px;
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #b8d0f0;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #293e52;
+            padding-bottom: 0.6rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .feed-header i {
+            color: #7aa9ff;
+            margin-right: 6px;
+        }
+
+        .feed-list {
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-right: 6px;
+        }
+
+        .feed-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .feed-list::-webkit-scrollbar-track {
+            background: #1c2a38;
+            border-radius: 12px;
+        }
+        .feed-list::-webkit-scrollbar-thumb {
+            background: #3b5a78;
+            border-radius: 12px;
+        }
+
+        .feed-item {
+            background: #17232f;
+            padding: 0.6rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #d3e4ff;
+            border-left: 4px solid #4a7bbf;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.15s ease;
+            word-break: break-word;
+            box-shadow: 0 2px 6px #0a1119;
+        }
+
+        .feed-item i {
+            width: 1.4rem;
+            color: #7aa9ff;
+            font-size: 0.9rem;
+        }
+
+        .feed-item .timestamp {
+            margin-left: auto;
+            font-size: 0.65rem;
+            color: #8aa3c0;
+            background: #1f3140;
+            padding: 0.15rem 0.6rem;
+            border-radius: 60px;
+        }
+
+        @keyframes slideIn {
+            0% {
+                opacity: 0.3;
+                transform: translateX(-8px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .clear-btn {
+            background: #1d3142;
+            border: none;
+            color: #b0d0ff;
+            border-radius: 40px;
+            padding: 0.3rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+            border: 1px solid #3e5a74;
+        }
+
+        .clear-btn:hover {
+            background: #2a435b;
+            color: white;
+            border-color: #6d93c0;
+        }
+
+        .footer-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            gap: 0.8rem;
+        }
+
+        .footer-actions button {
+            background: #1f3142;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            color: #c6dbff;
+            font-weight: 500;
+            border: 1px solid #38506a;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .footer-actions button i {
+            color: #7aa9ff;
+        }
+
+        .footer-actions button:hover {
+            background: #2b4057;
+            border-color: #5e83af;
+            color: white;
+        }
+
+        .bg-indicator {
+            background: #1a2b3b;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #9bb9e0;
+            border: 1px solid #3b5a7a;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bg-indicator i {
+            color: #29d67a;
+            font-size: 0.7rem;
+        }
+
+        @media (max-width: 700px) {
+            .tracker-card {
+                padding: 1.5rem;
+            }
+            .canvas-wrapper {
+                min-width: 100%;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .tracker-header h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tracker-card">
+        <!-- header -->
+        <div class="tracker-header">
+            <h1><i class="fas fa-eye"></i> ScreenTracker <span style="font-size: 0.9rem; background: #1b2a3a; padding: 0.1rem 1rem; border-radius: 30px; color: #b0d0ff; -webkit-text-fill-color: #b0d0ff; margin-left: 8px;">PRO</span></h1>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <span class="bg-indicator"><i class="fas fa-circle"></i> Background active</span>
+                <div class="status-badge">
+                    <span class="status-dot"></span> Live
+                </div>
+            </div>
+        </div>
+
+        <!-- stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-item"><i class="fas fa-mouse-pointer"></i><div class="stat-info"><span class="stat-label">Mouse moves</span><span class="stat-value" id="moveCount">0</span></div></div>
+            <div class="stat-item"><i class="fas fa-hand-pointer"></i><div class="stat-info"><span class="stat-label">Clicks</span><span class="stat-value" id="clickCount">0</span></div></div>
+            <div class="stat-item"><i class="fas fa-keyboard"></i><div class="stat-info"><span class="stat-label">Key presses</span><span class="stat-value" id="keyCount">0</span></div></div>
+            <div class="stat-item"><i class="fas fa-clock"></i><div class="stat-info"><span class="stat-label">Session</span><span class="stat-value" id="sessionTime">0s</span></div></div>
+        </div>
+
+        <!-- live canvas + feed -->
+        <div class="live-section">
+            <div class="canvas-wrapper">
+                <canvas id="trackCanvas" width="800" height="500"></canvas>
+            </div>
+            <div class="event-feed">
+                <div class="feed-header">
+                    <span><i class="fas fa-stream"></i> Event log</span>
+                    <button class="clear-btn" id="clearFeedBtn"><i class="fas fa-eraser"></i> Clear</button>
+                </div>
+                <div class="feed-list" id="feedList"></div>
+            </div>
+        </div>
+
+        <!-- footer controls -->
+        <div class="footer-actions">
+            <button id="resetStatsBtn"><i class="fas fa-chart-simple"></i> Reset stats</button>
+            <button id="toggleTrackingBtn"><i class="fas fa-pause"></i> Pause</button>
+            <button id="bgModeBtn" style="background: #2a4058; border-color: #5a82b0;"><i class="fas fa-layer-group"></i> Background</button>
+        </div>
+    </div>
+
+    <script>
+        // ---------- JavaScript (script.js) ----------
+        (function() {
+            "use strict";
+
+            // DOM refs
+            const canvas = document.getElementById('trackCanvas');
+            const ctx = canvas.getContext('2d');
+            const moveSpan = document.getElementById('moveCount');
+            const clickSpan = document.getElementById('clickCount');
+            const keySpan = document.getElementById('keyCount');
+            const sessionSpan = document.getElementById('sessionTime');
+            const feedList = document.getElementById('feedList');
+            const clearFeedBtn = document.getElementById('clearFeedBtn');
+            const resetStatsBtn = document.getElementById('resetStatsBtn');
+            const toggleBtn = document.getElementById('toggleTrackingBtn');
+            const bgModeBtn = document.getElementById('bgModeBtn');
+
+            // State
+            let moveCount = 0,
+                clickCount = 0,
+                keyCount = 0;
+            let sessionSeconds = 0;
+            let sessionInterval = null;
+            let trackingActive = true;
+            let mouseX = 400,
+                mouseY = 250;
+            let isBackground = false;
+
+            // Feed history (max 20)
+            const MAX_FEED = 20;
+
+            // ----- helpers -----
+            function updateStatsUI() {
+                moveSpan.textContent = moveCount;
+                clickSpan.textContent = clickCount;
+                keySpan.textContent = keyCount;
+                sessionSpan.textContent = sessionSeconds + 's';
+            }
+
+            // add event to feed
+            function addFeedItem(icon, text, extra = '') {
+                if (!trackingActive) return;
+                const item = document.createElement('div');
+                item.className = 'feed-item';
+                const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit',
+                    second: '2-digit' });
+                item.innerHTML = `<i class="fas ${icon}"></i><span>${text}</span><span class="timestamp">${timestamp}</span>`;
+                feedList.prepend(item);
+                while (feedList.children.length > MAX_FEED) {
+                    feedList.removeChild(feedList.lastChild);
+                }
+            }
+
+            function clearFeed() {
+                feedList.innerHTML = '';
+            }
+
+            function resetStats() {
+                moveCount = 0;
+                clickCount = 0;
+                keyCount = 0;
+                updateStatsUI();
+                addFeedItem('fa-rotate', 'Stats reset', '');
+                drawCanvas(true);
+            }
+
+            // ----- canvas drawing -----
+            function drawCanvas(keepBackground = false) {
+                const w = canvas.width,
+                    h = canvas.height;
+                if (!keepBackground) {
+                    ctx.fillStyle = '#101b26';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.strokeStyle = '#1f3348';
+                    ctx.lineWidth = 0.8;
+                    for (let x = 0; x <= w; x += 40) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, h);
+                        ctx.stroke();
+                    }
+                    for (let y = 0; y <= h; y += 40) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(w, y);
+                        ctx.stroke();
+                    }
+                    ctx.strokeStyle = '#2e4d6e';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(w / 2 - 30, h / 2);
+                    ctx.lineTo(w / 2 + 30, h / 2);
+                    ctx.moveTo(w / 2, h / 2 - 30);
+                    ctx.lineTo(w / 2, h / 2 + 30);
+                    ctx.stroke();
+                }
+
+                ctx.shadowColor = '#7aa9ff';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#7aa9ff';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
+
+            function updateMousePosition(e) {
+                if (!trackingActive) return;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                let canvasX = (e.clientX - rect.left) * scaleX;
+                let canvasY = (e.clientY - rect.top) * scaleY;
+                canvasX = Math.min(Math.max(canvasX, 0), canvas.width);
+                canvasY = Math.min(Math.max(canvasY, 0), canvas.height);
+                mouseX = canvasX;
+                mouseY = canvasY;
+                drawCanvas(true);
+                moveCount++;
+                updateStatsUI();
+                if (moveCount % 3 === 0) {
+                    addFeedItem('fa-arrows-up-down', `Move (${Math.round(mouseX)}, ${Math.round(mouseY)})`);
+                }
+            }
+
+            // ----- Background mode: uses Page Visibility API to keep running -----
+            function setupBackgroundMode() {
+                document.addEventListener('visibilitychange', function() {
+                    if (document.hidden) {
+                        // Page is hidden (minimized or tab switched)
+                        if (trackingActive) {
+                            // still tracking, just log once
+                            if (!isBackground) {
+                                isBackground = true;
+                                addFeedItem('fa-eye-slash', 'Background mode active');
+                            }
+                        }
+                    } else {
+                        // Page visible again
+                        if (isBackground) {
+                            isBackground = false;
+                            addFeedItem('fa-eye', 'Foreground active');
+                            drawCanvas(true);
+                        }
+                    }
+                });
+
+                // Also handle window blur/focus for extra reliability
+                window.addEventListener('blur', function() {
+                    if (trackingActive && !isBackground) {
+                        isBackground = true;
+                        addFeedItem('fa-window-minimize', 'Window minimized');
+                    }
+                });
+
+                window.addEventListener('focus', function() {
+                    if (isBackground) {
+                        isBackground = false;
+                        addFeedItem('fa-window-maximize', 'Window restored');
+                        drawCanvas(true);
+                    }
+                });
+            }
+
+            // ----- event listeners -----
+            function handleMouseMove(e) {
+                if (!trackingActive) return;
+                updateMousePosition(e);
+            }
+
+            function handleClick(e) {
+                if (!trackingActive) return;
+                clickCount++;
+                updateStatsUI();
+                addFeedItem('fa-hand-pointer', `Click at (${Math.round(mouseX)}, ${Math.round(mouseY)})`);
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 16, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffbb4480';
+                ctx.fill();
+                setTimeout(() => drawCanvas(true), 120);
+            }
+
+            function handleKeyDown(e) {
+                if (!trackingActive) return;
+                if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt') return;
+                keyCount++;
+                updateStatsUI();
+                let keyDisplay = e.key.length === 1 ? e.key : (e.key === ' ' ? 'Space' : e.key);
+                addFeedItem('fa-keyboard', `Key: ${keyDisplay}`);
+                ctx.fillStyle = '#2a6b9e40';
+                ctx.fillRect(0, 0, canvas.width, 30);
+                ctx.fillStyle = '#b0d0ff';
+                ctx.font = 'bold 16px monospace';
+                ctx.fillText(`⌨ ${keyDisplay}`, 20, 26);
+                setTimeout(() => drawCanvas(true), 200);
+            }
+
+            // session timer
+            function startSessionTimer() {
+                if (sessionInterval) clearInterval(sessionInterval);
+                sessionInterval = setInterval(() => {
+                    sessionSeconds++;
+                    sessionSpan.textContent = sessionSeconds + 's';
+                }, 1000);
+            }
+
+            // pause / resume
+            function toggleTracking() {
+                trackingActive = !trackingActive;
+                toggleBtn.innerHTML = trackingActive ? '<i class="fas fa-pause"></i> Pause' :
+                    '<i class="fas fa-play"></i> Resume';
+                if (trackingActive) {
+                    addFeedItem('fa-play', 'Tracking resumed');
+                    drawCanvas(true);
+                } else {
+                    addFeedItem('fa-pause', 'Tracking paused');
+                }
+            }
+
+            // background mode toggle (visual feedback)
+            function toggleBackgroundHint() {
+                addFeedItem('fa-info-circle', 'Tracker runs in background even when minimized');
+                // just a hint, actual background is automatic via visibility API
+            }
+
+            function attachEvents() {
+                canvas.addEventListener('mousemove', handleMouseMove);
+                canvas.addEventListener('click', handleClick);
+                document.addEventListener('keydown', handleKeyDown);
+            }
+
+            function detachEvents() {
+                canvas.removeEventListener('mousemove', handleMouseMove);
+                canvas.removeEventListener('click', handleClick);
+                document.removeEventListener('keydown', handleKeyDown);
+            }
+
+            // ----- init -----
+            function init() {
+                drawCanvas(false);
+                attachEvents();
+                startSessionTimer();
+                updateStatsUI();
+                setupBackgroundMode();
+                addFeedItem('fa-rocket', 'Tracker started · Pro (Background ready)');
+
+                clearFeedBtn.addEventListener('click', clearFeed);
+                resetStatsBtn.addEventListener('click', resetStats);
+                toggleBtn.addEventListener('click', toggleTracking);
+                bgModeBtn.addEventListener('click', toggleBackgroundHint);
+
+                window.addEventListener('resize', () => drawCanvas(true));
+            }
+
+            init();
+
+            window.addEventListener('beforeunload', function() {
+                detachEvents();
+                if (sessionInterval) clearInterval(sessionInterval);
+            });
+
+        })();
+    </script>
+</body>
+</html>
